@@ -1,36 +1,49 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+from sklearn import datasets
+from sklearn.ensemble import RandomForestClassifier
 
-st.title('Uber pickups in NYC')
+st.write("""
+# Simple Iris Flower Prediction App
 
-DATE_COLUMN = 'date/time'
-DATA_URL = ('https://s3-us-west-2.amazonaws.com/'
-            'streamlit-demo-data/uber-raw-data-sep14.csv.gz')
+This app predicts the **Iris flower** type!
+""")
 
-@st.cache
-def load_data(nrows):
-    data = pd.read_csv(DATA_URL, nrows=nrows)
-    lowercase = lambda x: str(x).lower()
-    data.rename(lowercase, axis='columns', inplace=True)
-    data[DATE_COLUMN] = pd.to_datetime(data[DATE_COLUMN])
-    return data
+st.sidebar.header('User Input Parameters')
 
-data_load_state = st.text('Loading data...')
-data = load_data(10000)
-data_load_state.text("Done! (using st.cache)")
+def user_input_features():
+    sepal_length = st.sidebar.slider('Sepal length', 4.3, 7.9, 5.4)
+    sepal_width = st.sidebar.slider('Sepal width', 2.0, 4.4, 3.4)
+    petal_length = st.sidebar.slider('Petal length', 1.0, 6.9, 1.3)
+    petal_width = st.sidebar.slider('Petal width', 0.1, 2.5, 0.2)
+    data = {'sepal_length': sepal_length,
+            'sepal_width': sepal_width,
+            'petal_length': petal_length,
+            'petal_width': petal_width}
+    features = pd.DataFrame(data, index=[0])
+    return features
 
-if st.checkbox('Show raw data'):
-    st.subheader('Raw data')
-    st.write(data)
+df = user_input_features()
 
-st.subheader('Number of pickups by hour')
-hist_values = np.histogram(data[DATE_COLUMN].dt.hour, bins=24, range=(0,24))[0]
-st.bar_chart(hist_values)
+st.subheader('User Input parameters')
+st.write(df)
 
-# Some number in the range 0-23
-hour_to_filter = st.slider('hour', 0, 23, 17)
-filtered_data = data[data[DATE_COLUMN].dt.hour == hour_to_filter]
+iris = datasets.load_iris()
+X = iris.data
+Y = iris.target
 
-st.subheader('Map of all pickups at %s:00' % hour_to_filter)
-st.map(filtered_data)
+clf = RandomForestClassifier()
+clf.fit(X, Y)
+
+prediction = clf.predict(df)
+prediction_proba = clf.predict_proba(df)
+
+st.subheader('Class labels and their corresponding index number')
+st.write(iris.target_names)
+
+st.subheader('Prediction')
+st.write(iris.target_names[prediction])
+#st.write(prediction)
+
+st.subheader('Prediction Probability')
+st.write(prediction_proba)
